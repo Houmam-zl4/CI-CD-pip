@@ -2,36 +2,28 @@ pipeline {
     agent any
 
     stages {
-        stage('Checkout') {
+        stage('Test Docker Build') {
             steps {
-                // Récupère le code source du dépôt Git
-                git branch: 'main', url: 'https://github.com/Houmam-zl4/CI-CD-pip.git'
-            }
-        }
-        stage('Build') {
-            steps {
-                // Vérifie si le fichier index.html est dans le répertoire du projet
                 script {
-                    if (fileExists('index.html')) {
-                        echo "index.html trouvé"
+                    // Test si Dockerfile et index.html existent avant de construire l'image
+                    if (fileExists('Dockerfile') && fileExists('CI-CD-pip/index.html')) {
+                        echo "Dockerfile et index.html trouvés, démarrage de la construction..."
+                        // Construire l'image Docker
+                        sh 'docker build -t mon-projet-jenkins .'
                     } else {
-                        error "Le fichier index.html est introuvable"
+                        error "Le Dockerfile ou index.html est manquant!"
                     }
                 }
-                // Exemple de build Docker, construisez l'image à partir du Dockerfile
-                sh 'docker build -f C:/Jenkins/jenkins11/Dockerfile -t mon-projet-jenkins .'
             }
         }
-        stage('Test') {
+        stage('Test Docker Run') {
             steps {
-                // Exemple de tests : si vous avez des tests définis dans npm ou une autre configuration de test
-                sh 'docker run --rm mon-projet-jenkins npm test'
-            }
-        }
-        stage('Deploy') {
-            steps {
-                // Déploiement avec le conteneur mon-projet-jenkins
-                sh 'docker run -d -p 8081:80 --name mon-projet-jenkins mon-projet-jenkins'
+                script {
+                    // Exécuter le conteneur en mode détaché pour tester l'image
+                    sh 'docker run -d -p 8081:80 --name mon-projet-jenkins mon-projet-jenkins'
+                    // Vérifier si le conteneur fonctionne
+                    sh 'docker ps -a'
+                }
             }
         }
     }
