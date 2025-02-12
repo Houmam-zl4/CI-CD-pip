@@ -12,7 +12,7 @@ pipeline {
             steps {
                 // Vérifie si le fichier index.html est dans le répertoire du projet
                 script {
-                    if (fileExists('C:/Jenkins/jenkins11/index.html')) {
+                    if (fileExists('index.html')) {
                         echo "index.html trouvé"
                     } else {
                         error "Le fichier index.html est introuvable"
