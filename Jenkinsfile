@@ -10,13 +10,14 @@ pipeline {
         }
         stage('Build') {
             steps {
-                // Exemple de build Docker, vous pouvez remplacer cela par les commandes de votre projet
+                // Exemple de build Docker, construisez l'image à partir du Dockerfile
                 sh 'docker build -t mon-projet-jenkins .'
             }
         }
         stage('Test') {
             steps {
-                // Exemple de tests, remplacez-le par vos propres commandes de test
+                // Exemple de tests : si vous avez des tests définis dans npm ou une autre configuration de test
+                // Modifiez cette ligne en fonction de votre environnement et des tests que vous souhaitez exécuter
                 sh 'docker run --rm mon-projet-jenkins npm test'
             }
         }
