@@ -5,7 +5,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Récupère le code source du dépôt Git
-                git 'https://github.com/Houmam-zl4/CI-CD-pip.git'
+                git branch: 'main', url: 'https://github.com/Houmam-zl4/CI-CD-pip.git'
             }
         }
         stage('Build') {
