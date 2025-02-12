@@ -8,47 +8,31 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/Houmam-zl4/CI-CD-pip.git'
             }
         }
-
         stage('Build') {
             steps {
+                // Vérifie si le fichier index.html est dans le répertoire du projet
                 script {
-                    // Vérifie si Dockerfile existe avant de procéder au build
-                    if (fileExists('C:/Jenkins/jenkins11/Dockerfile')) {
-                        sh 'docker build -f C:/Jenkins/jenkins11/Dockerfile -t mon-projet-jenkins .'
+                    if (fileExists('C:/Jenkins/jenkins11/index.html')) {
+                        echo "index.html trouvé"
                     } else {
-                        error 'Dockerfile is missing!'
+                        error "Le fichier index.html est introuvable"
                     }
                 }
+                // Exemple de build Docker, construisez l'image à partir du Dockerfile
+                sh 'docker build -f C:/Jenkins/jenkins11/Dockerfile -t mon-projet-jenkins .'
             }
         }
-
         stage('Test') {
             steps {
-                script {
-                    // Tester l'image construite (ajuster cette ligne en fonction de ton environnement de test)
-                    try {
-                        sh 'docker run --rm mon-projet-jenkins npm test'
-                    } catch (Exception e) {
-                        echo "Tests failed: ${e.getMessage()}"
-                        currentBuild.result = 'FAILURE'
-                    }
-                }
+                // Exemple de tests : si vous avez des tests définis dans npm ou une autre configuration de test
+                sh 'docker run --rm mon-projet-jenkins npm test'
             }
         }
-
         stage('Deploy') {
             steps {
-                // Déployer l'image Docker dans un conteneur
+                // Déploiement avec le conteneur mon-projet-jenkins
                 sh 'docker run -d -p 8081:80 --name mon-projet-jenkins mon-projet-jenkins'
             }
-        }
-    }
-
-    post {
-        always {
-            // Nettoyer après le pipeline : arrêter et supprimer le conteneur s'il est encore en cours d'exécution
-            sh 'docker stop mon-projet-jenkins || true'
-            sh 'docker rm mon-projet-jenkins || true'
         }
     }
 }
