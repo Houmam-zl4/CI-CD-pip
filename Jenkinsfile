@@ -1,30 +1,71 @@
 pipeline {
     agent any
 
+    environment {
+        NODE_HOME = 'C:\\Program Files\\nodejs'
+        PATH = "${NODE_HOME};${env.PATH}" // Ajoute Node.js au PATH si non reconnu
+    }
+
     stages {
-        stage('Test Docker Build') {
+        stage('Cloner le dépôt') {
             steps {
                 script {
-                    // Test si Dockerfile et index.html existent avant de construire l'image
-                    if (fileExists('Dockerfile') && fileExists('CI-CD-pip/index.html')) {
-                        echo "Dockerfile et index.html trouvés, démarrage de la construction..."
-                        // Construire l'image Docker
-                        sh 'docker build -t mon-projet-jenkins .'
-                    } else {
-                        error "Le Dockerfile ou index.html est manquant!"
+                    // Si le dépôt est privé, ajouter les credentials Jenkins
+                    git branch: 'main', credentialsId: 'GITHUB_CREDENTIALS', url: 'https://github.com/Houmam-zl4/jenkins11.git'
+                }
+            }
+        }
+
+        stage('Installer les dépendances') {
+            steps {
+                script {
+                    def installStatus = bat(script: 'npm install', returnStatus: true)
+                    if (installStatus != 0) {
+                        error("❌ Erreur: npm install a échoué !")
                     }
                 }
             }
         }
-        stage('Test Docker Run') {
+
+        stage('Tester le projet') {
             steps {
                 script {
-                    // Exécuter le conteneur en mode détaché pour tester l'image
-                    sh 'docker run -d -p 8081:80 --name mon-projet-jenkins mon-projet-jenkins'
-                    // Vérifier si le conteneur fonctionne
-                    sh 'docker ps -a'
+                    def testStatus = bat(script: 'npm test', returnStatus: true)
+                    if (testStatus != 0) {
+                        currentBuild.result = 'FAILURE'
+                        error("❌ Les tests ont échoué !")
+                    }
                 }
             }
+        }
+
+        stage('Archiver les tests') {
+            steps {
+                archiveArtifacts artifacts: '**/test-results/**/*.xml', allowEmptyArchive: true
+            }
+        }
+
+        stage('Déployer') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    def deployStatus = bat(script: 'npm run deploy', returnStatus: true)
+                    if (deployStatus != 0) {
+                        error("❌ Le déploiement a échoué !")
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo '📝 Pipeline terminé.'
+        }
+        failure {
+            echo '❌ Échec du pipeline !'
         }
     }
 }
