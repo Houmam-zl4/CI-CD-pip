@@ -47,14 +47,16 @@ pipeline {
                 script {
                     echo "📤 Publication de l'image sur Docker Hub..."
                     docker.withRegistry('https://index.docker.io/v1/', registryCredential) {
-                        def pushStatus = bat(script: """
-                            docker login -u houmamzl4 -p \$DOCKER_PASSWORD
-                            docker push ${registry}:${BUILD_NUMBER}
-                            docker tag ${registry}:${BUILD_NUMBER} ${registry}:latest
-                            docker push ${registry}:latest
-                        """, returnStatus: true)
-                        if (pushStatus != 0) {
-                            error("❌ Échec du push sur Docker Hub !")
+                        withCredentials([string(credentialsId: 'DOCKER_PASSWORD', variable: 'DOCKER_PASSWORD')]) {
+                            def pushStatus = bat(script: """
+                                docker login -u houmamzl4 -p ${DOCKER_PASSWORD}
+                                docker push ${registry}:${BUILD_NUMBER}
+                                docker tag ${registry}:${BUILD_NUMBER} ${registry}:latest
+                                docker push ${registry}:latest
+                            """, returnStatus: true)
+                            if (pushStatus != 0) {
+                                error("❌ Échec du push sur Docker Hub !")
+                            }
                         }
                     }
                 }
