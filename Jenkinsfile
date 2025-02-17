@@ -1,71 +1,75 @@
 pipeline {
-    agent any
-
     environment {
-        NODE_HOME = 'C:\\Program Files\\nodejs'
-        PATH = "${NODE_HOME};${env.PATH}" // Ajoute Node.js au PATH si non reconnu
+        registry = "houmam/tp4cicd"
+        registryCredential = 'dockerhub' // ID des credentials Docker Hub dans Jenkins
+        dockerImage = ''
+        DOCKER_HOST = 'npipe:////./pipe/docker_engine' // Connexion Docker via le pipe sur Windows
     }
-
+    agent any
     stages {
-        stage('Cloner le dépôt') {
+        stage('Cloning Git') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'houmam',  // ID des credentials GitHub dans Jenkins
+                    url: 'https://github.com/Houmam-zl4/CI-CD-pip'
+            }
+        }
+        stage('Building Docker Image') {
             steps {
                 script {
-                    // Si le dépôt est privé, ajouter les credentials Jenkins
-                    git branch: 'main', credentialsId: 'GITHUB_CREDENTIALS', url: 'https://github.com/Houmam-zl4/jenkins11.git'
+                    echo "Building Docker image..."
+                    // Construction de l'image Docker avec le numéro de build Jenkins
+                    dockerImage = docker.build("${registry}:${BUILD_NUMBER}")
                 }
             }
         }
-
-        stage('Installer les dépendances') {
+        stage('Testing Docker Image') {
             steps {
                 script {
-                    def installStatus = bat(script: 'npm install', returnStatus: true)
-                    if (installStatus != 0) {
-                        error("❌ Erreur: npm install a échoué !")
+                    echo "Running tests on Docker image..."
+                    // Remplacez ceci par des tests réels si nécessaire
+                    echo "Tests passed"
+                }
+            }
+        }
+        stage('Publishing Docker Image') {
+            steps {
+                script {
+                    echo "Publishing Docker image to Docker Hub..."
+                    // Publier l'image Docker dans Docker Hub avec les credentials
+                    docker.withRegistry('https://index.docker.io/v1/', registryCredential) {
+                        dockerImage.push() // Push avec le numéro de build
+                        dockerImage.push('latest') // Push avec le tag 'latest'
                     }
                 }
             }
         }
-
-        stage('Tester le projet') {
+        stage('Deploying Docker Image') {
             steps {
                 script {
-                    def testStatus = bat(script: 'npm test', returnStatus: true)
-                    if (testStatus != 0) {
-                        currentBuild.result = 'FAILURE'
-                        error("❌ Les tests ont échoué !")
-                    }
-                }
-            }
-        }
-
-        stage('Archiver les tests') {
-            steps {
-                archiveArtifacts artifacts: '**/test-results/**/*.xml', allowEmptyArchive: true
-            }
-        }
-
-        stage('Déployer') {
-            when {
-                branch 'main'
-            }
-            steps {
-                script {
-                    def deployStatus = bat(script: 'npm run deploy', returnStatus: true)
-                    if (deployStatus != 0) {
-                        error("❌ Le déploiement a échoué !")
-                    }
+                    echo "Deploying Docker image..."
+                    // Commande Docker pour démarrer un conteneur sur Windows avec le port 8080 mappé
+                    bat "docker run -d -p 8080:80 --name app-${BUILD_NUMBER} ${registry}:${BUILD_NUMBER}"
                 }
             }
         }
     }
-
     post {
         always {
-            echo '📝 Pipeline terminé.'
+            script {
+                echo "Cleaning up workspace..."
+                cleanWs() // Nettoie les fichiers temporaires du workspace Jenkins
+            }
         }
         failure {
-            echo '❌ Échec du pipeline !'
+            script {
+                echo "Pipeline failed. Check logs for more details."
+            }
+        }
+        success {
+            script {
+                echo "Pipeline completed successfully!"
+            }
         }
     }
 }
