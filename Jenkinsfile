@@ -73,7 +73,7 @@ pipeline {
                     def deployStatus = bat(script: """
                         docker stop app-${BUILD_NUMBER} || echo "Pas de conteneur à stopper"
                         docker rm app-${BUILD_NUMBER} || echo "Pas de conteneur à supprimer"
-                        docker run -d -p 8080:80 --name app-${BUILD_NUMBER} ${registry}:${BUILD_NUMBER}
+                        docker run -d -p 8081:80 --name app-${BUILD_NUMBER} ${registry}:${BUILD_NUMBER}
                     """, returnStatus: true)
                     if (deployStatus != 0) {
                         error("❌ Échec du déploiement Docker !")
