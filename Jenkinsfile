@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         registry = "houmamzl4/tp4cicd" // Ton nom de repository Docker Hub
-        registryCredential = 'dockerhub' // ID des credentials Docker Hub dans Jenkins
+        registryCredential = 'b6e75e96-d1aa-4907-a8b2-2ffb5370a524' // ID des credentials Docker Hub dans Jenkins
         DOCKER_HOST = 'npipe:////./pipe/docker_engine' // Connexion Docker pour Windows
     }
 
@@ -47,7 +47,7 @@ pipeline {
                 script {
                     echo "📤 Publication de l'image sur Docker Hub..."
                     docker.withRegistry('https://index.docker.io/v1/', registryCredential) {
-                        withCredentials([string(credentialsId: 'DOCKER_PASSWORD', variable: 'DOCKER_PASSWORD')]) {
+                        withCredentials([string(credentialsId: '83683e3b-50c2-40df-ac1f-f09a07da8ca5', variable: 'DOCKER_PASSWORD')]) {
                             def pushStatus = bat(script: """
                                 docker login -u houmamzl4 -p ${DOCKER_PASSWORD}
                                 docker push ${registry}:${BUILD_NUMBER}
@@ -73,7 +73,7 @@ pipeline {
                     def deployStatus = bat(script: """
                         docker stop app-${BUILD_NUMBER} || echo "Pas de conteneur à stopper"
                         docker rm app-${BUILD_NUMBER} || echo "Pas de conteneur à supprimer"
-                        docker run -d -p 8081:80 --name app-${BUILD_NUMBER} ${registry}:${BUILD_NUMBER}
+                        docker run -d -p 8080:80 --name app-${BUILD_NUMBER} ${registry}:${BUILD_NUMBER}
                     """, returnStatus: true)
                     if (deployStatus != 0) {
                         error("❌ Échec du déploiement Docker !")
